@@ -2,6 +2,7 @@
 using Microsoft.AspNet.Mvc;
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Authentication.Controllers
 {
@@ -15,7 +16,7 @@ namespace Authentication.Controllers
         }
 
         [HttpPost]
-        public IActionResult Login(string userName, string password, string returnUrl = null)
+        public async Task<IActionResult> Login(string userName, string password, string returnUrl = null)
         {
             ViewData["ReturnUrl"] = returnUrl;
 
@@ -30,7 +31,7 @@ namespace Authentication.Controllers
                     };
 
                 var id = new ClaimsIdentity(claims, "local", "name", "role");
-                Context.Authentication.SignIn("Cookies", new ClaimsPrincipal(id));
+                await Context.Authentication.SignInAsync("Cookies", new ClaimsPrincipal(id));
 
                 return RedirectToLocal(returnUrl);
             }
@@ -48,17 +49,17 @@ namespace Authentication.Controllers
             return new ChallengeResult(provider, props);
         }
 
-        public IActionResult ExternalCallback()
+        public async Task<IActionResult> ExternalCallback()
         {
-            var externalId = Context.Authentication.Authenticate("Temp");
+            var externalId = await Context.Authentication.AuthenticateAsync("Temp");
 
             // check external identity - e.g. to see if registration is required
             // or to associate account with current login etc
             // name identifier is the unique id of the user in the context of the external provider
-            var userId = externalId.Principal.FindFirst(ClaimTypes.NameIdentifier).Value;
+            var userId = externalId.FindFirst(ClaimTypes.NameIdentifier).Value;
 
-            var name = externalId.Principal.FindFirst(ClaimTypes.Name).Value;
-            var email = externalId.Principal.FindFirst(ClaimTypes.Email).Value;
+            var name = externalId.FindFirst(ClaimTypes.Name).Value;
+            var email = externalId.FindFirst(ClaimTypes.Email).Value;
 
             // add some application claims from profile database
             var role = new Claim("role", "PremiumUser");
@@ -69,17 +70,17 @@ namespace Authentication.Controllers
             newId.AddClaim(role);
 
             // sign in user with main cookie
-            Context.Authentication.SignIn("Cookies", new ClaimsPrincipal(newId));
+            await Context.Authentication.SignInAsync("Cookies", new ClaimsPrincipal(newId));
 
             // delete temp cookie
-            Context.Authentication.SignOut("Temp");
+            await Context.Authentication.SignOutAsync("Temp");
 
             return Redirect("/home/secure");
         }
 
-        public IActionResult Logoff()
+        public async Task<IActionResult> Logoff()
         {
-            Context.Authentication.SignOut();
+            await Context.Authentication.SignOutAsync("Cookies");
             return RedirectToAction(nameof(HomeController.Index), "Home");
         }
 

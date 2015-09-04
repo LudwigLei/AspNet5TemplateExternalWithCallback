@@ -15,8 +15,7 @@ namespace Authentication
         public void Configure(IApplicationBuilder app, IHostingEnvironment env, ILoggerFactory loggerFactory)
         {
             loggerFactory.MinimumLevel = LogLevel.Information;
-            loggerFactory.AddConsole();
-
+            
             app.UseCookieAuthentication(options =>
             {
                 options.LoginPath = "/account/login";
